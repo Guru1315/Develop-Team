@@ -1,0 +1,4 @@
+.env
+*.key
+.flowise/
+node_modules/
