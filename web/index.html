@@ -117,8 +117,16 @@ function toast(msg){const t=$('#toast');t.textContent=msg;t.style.display='block
 function setConn(ok,msg){$('#dot').className='dot '+(ok?'on':'bad');$('#conn').textContent=msg}
 
 /* ---------- connect ---------- */
+function normUrl(v){
+  v=(v||'').trim().replace(/\/+$/,'');
+  if(!v)return v;
+  if(/^https?:\/\//i.test(v))return v;
+  if(!v.includes('.'))return 'https://'+v+'.supabase.co';
+  return 'https://'+v;
+}
 async function connect(){
-  const s={url:$('#sbUrl').value.trim(),key:$('#sbKey').value.trim(),hook:$('#hook').value.trim()};
+  const s={url:normUrl($('#sbUrl').value),key:$('#sbKey').value.trim(),hook:$('#hook').value.trim()};
+  $('#sbUrl').value=s.url;
   if(!s.url||!s.key){$('#connMsg').textContent='Supabase URL and anon key are required.';return}
   putSettings(s);
   try{
