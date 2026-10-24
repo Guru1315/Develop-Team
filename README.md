@@ -66,6 +66,10 @@ The prompts for each agent are in [`prompts/`](prompts/) if you want to read or 
 
 See [`examples/todo-app-output.md`](examples/todo-app-output.md) for a sample run (replace with your own output).
 
+## Web console
+
+[`web/`](web/) has a single-page dashboard (n8n + Supabase) for running the team and editing each agent's prompt and model live. Setup is in [`web/README.md`](web/README.md).
+
 ## Flowise vs n8n
 
 | | Flowise | n8n |

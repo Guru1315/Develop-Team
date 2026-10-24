@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dev Team Console</title>
+<style>
+:root{--bg:#0f1115;--panel:#171a21;--panel2:#1d212a;--line:#2a2f3a;--text:#e7eaf0;--mute:#8b93a4;--accent:#4f8cff;--ok:#3ecf8e;--warn:#f5a623;--err:#ff5d5d;--r:12px}
+@media (prefers-color-scheme:light){:root{--bg:#f5f6f8;--panel:#fff;--panel2:#f0f2f6;--line:#dfe3ea;--text:#171a21;--mute:#667085;--accent:#2f6fed;--ok:#12a36b;--warn:#c77d0a;--err:#d63b3b}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+h1{font-size:18px;margin:0;font-weight:650}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--mute);display:inline-block;margin-right:6px}
+.dot.on{background:var(--ok)}.dot.bad{background:var(--err)}
+.grow{flex:1}
+main{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;padding:16px;max-width:1280px;margin:0 auto}
+@media (max-width:900px){main{grid-template-columns:1fr}}
+section,details.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+h2{font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--mute);margin:0 0 12px;font-weight:600}
+label{display:block;font-size:12px;color:var(--mute);margin:10px 0 4px}
+input,textarea,select{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px 10px;font:inherit}
+textarea{resize:vertical;min-height:90px;font-family:ui-monospace,Consolas,monospace;font-size:13px}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:0}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:9px 14px;font:inherit;font-weight:600;cursor:pointer}
+button.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chips button{background:var(--panel2);color:var(--mute);border:1px solid var(--line);font-weight:500;font-size:12px;padding:5px 9px;border-radius:999px}
+.pipe{display:flex;gap:6px;margin:14px 0;flex-wrap:wrap}
+.stage{flex:1;min-width:110px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--panel2);font-size:13px}
+.stage b{display:block;font-weight:600}
+.stage small{color:var(--mute)}
+.stage.running{border-color:var(--warn)}.stage.running small{color:var(--warn)}
+.stage.done{border-color:var(--ok)}.stage.done small{color:var(--ok)}
+.badge{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);color:var(--mute)}
+.step{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--panel2)}
+.step summary{cursor:pointer;padding:9px 12px;display:flex;gap:8px;align-items:center}
+.step pre{margin:0;padding:10px 12px;border-top:1px solid var(--line);white-space:pre-wrap;word-break:break-word;font:12.5px/1.5 ui-monospace,Consolas,monospace;max-height:340px;overflow:auto}
+.agent{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px;background:var(--panel2)}
+.agent h3{margin:0;font-size:15px}
+.two{display:grid;grid-template-columns:2fr 1fr;gap:8px}
+.muted{color:var(--mute);font-size:13px}
+.status-ok{color:var(--ok)}.status-err{color:var(--err)}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);padding:9px 14px;border-radius:10px;display:none;z-index:9}
+.full{grid-column:1/-1}
+</style>
+</head>
+<body>
+<header>
+  <h1>Dev Team Console</h1>
+  <span class="muted"><span class="dot" id="dot"></span><span id="conn">Not connected</span></span>
+  <span class="grow"></span>
+  <button class="ghost" id="resetBtn" title="Forget saved keys in this browser">Clear saved keys</button>
+</header>
+
+<main>
+  <details class="card full" id="settings" open>
+    <summary><b>Connection settings</b> <span class="muted">stored only in this browser</span></summary>
+    <div class="two" style="grid-template-columns:1fr 1fr">
+      <div><label for="sbUrl">Supabase project URL</label><input id="sbUrl" placeholder="https://xxxx.supabase.co" autocomplete="off"></div>
+      <div><label for="sbKey">Supabase anon (public) key</label><input id="sbKey" placeholder="eyJ..." autocomplete="off"></div>
+    </div>
+    <label for="hook">n8n webhook URL (POST)</label>
+    <input id="hook" placeholder="https://your-name.app.n8n.cloud/webhook/dev-team" autocomplete="off">
+    <div class="row" style="margin-top:12px"><button id="connectBtn">Save &amp; connect</button><span class="muted" id="connMsg"></span></div>
+  </details>
+
+  <section>
+    <h2>Run the team</h2>
+    <label for="req">Your request</label>
+    <textarea id="req" placeholder="Build a Python CLI that checks password strength..."></textarea>
+    <div class="chips row" style="margin-top:8px" id="chips"></div>
+    <div class="row" style="margin-top:12px">
+      <button id="runBtn" disabled>Run</button>
+      <select id="history" style="width:auto;flex:1;min-width:180px"><option value="">Past runs…</option></select>
+      <span class="badge" id="roundBadge" hidden></span>
+      <span class="badge" id="runStatus" hidden></span>
+    </div>
+
+    <div class="pipe" id="pipe"></div>
+    <h2>Live output</h2>
+    <div id="steps"><p class="muted">Nothing yet. Start a run.</p></div>
+
+    <div id="final" hidden>
+      <h2 style="margin-top:18px">Final package</h2>
+      <div class="row">
+        <button id="dlPkg">Download package (.md)</button>
+        <button class="ghost" id="dlCode">Download code (.py)</button>
+        <button class="ghost" id="cpCode">Copy code</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Agents (edit live)</h2>
+    <p class="muted" style="margin-top:0">Changes are saved to Supabase and used by the <b>next</b> run. n8n reads them at the start of every run.</p>
+    <div id="agents"><p class="muted">Connect to load agents.</p></div>
+  </section>
+</main>
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const ORDER=[{id:'product_manager',label:'Product Manager'},{id:'architect',label:'Architect'},{id:'developer',label:'Developer'},{id:'tester',label:'Tester'}];
+const EXAMPLES=[
+ ['Password checker','Build a Python CLI that checks password strength. It should score length, uppercase, lowercase, digits and symbols, label the password Weak, Medium or Strong, and give tips to improve it. Single file, no external libraries.'],
+ ['To-do CLI','Build a CLI to-do app in Python with add, list, and delete, saved in a JSON file.'],
+ ['Unit converter','Build a Python CLI unit converter for length, weight and temperature.']
+];
+const $=s=>document.querySelector(s);
+let sb=null, run=null, steps=[], pollTimer=null, cfgRows={}, dirty={};
+
+function getSettings(){try{return JSON.parse(localStorage.getItem('devteam')||'{}')}catch(e){return{}}}
+function putSettings(s){try{localStorage.setItem('devteam',JSON.stringify(s))}catch(e){}}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',2600)}
+function setConn(ok,msg){$('#dot').className='dot '+(ok?'on':'bad');$('#conn').textContent=msg}
+
+/* ---------- connect ---------- */
+async function connect(){
+  const s={url:$('#sbUrl').value.trim(),key:$('#sbKey').value.trim(),hook:$('#hook').value.trim()};
+  if(!s.url||!s.key){$('#connMsg').textContent='Supabase URL and anon key are required.';return}
+  putSettings(s);
+  try{
+    if(!window.supabase)throw new Error('Supabase library did not load (check your internet).');
+    sb=window.supabase.createClient(s.url,s.key);
+    const {data,error}=await sb.from('agent_config').select('*');
+    if(error)throw error;
+    cfgRows={};data.forEach(r=>cfgRows[r.agent]=r);
+    renderAgents();subscribe();await loadHistory();
+    setConn(true,'Connected to Supabase');$('#connMsg').textContent=s.hook?'':'Add the n8n webhook URL to enable Run.';
+    $('#runBtn').disabled=!s.hook;
+    $('#settings').open=false;
+  }catch(e){
+    sb=null;setConn(false,'Connection failed');$('#connMsg').textContent=String(e.message||e);$('#runBtn').disabled=true;
+  }
+}
+
+/* ---------- agents editor ---------- */
+function renderAgents(){
+  const box=$('#agents');box.textContent='';
+  ORDER.forEach(a=>{
+    const r=cfgRows[a.id]||{agent:a.id,label:a.label,system_message:'',model:'',temperature:0.3};
+    const card=document.createElement('div');card.className='agent';card.id='ag-'+a.id;
+    card.innerHTML=`<h3></h3><div class="two"><div><label>Model name</label><input data-f="model"></div><div><label>Temperature</label><input data-f="temperature" type="number" step="0.1" min="0" max="1"></div></div><label>System message</label><textarea data-f="system_message" rows="6"></textarea><div class="row" style="margin-top:10px"><button data-save>Save</button><span class="muted" data-msg></span></div>`;
+    card.querySelector('h3').textContent=a.label;
+    card.querySelectorAll('[data-f]').forEach(el=>{
+      el.value=r[el.dataset.f]??'';
+      el.addEventListener('input',()=>{dirty[a.id]=true;card.querySelector('[data-msg]').textContent='Unsaved changes'});
+    });
+    card.querySelector('[data-save]').onclick=()=>saveAgent(a);
+    box.appendChild(card);
+  });
+}
+async function saveAgent(a){
+  if(!sb)return;
+  const card=$('#ag-'+a.id),g=f=>card.querySelector(`[data-f="${f}"]`).value;
+  const row={agent:a.id,label:a.label,system_message:g('system_message'),model:g('model').trim(),temperature:parseFloat(g('temperature'))||0.3,updated_at:new Date().toISOString()};
+  const {error}=await sb.from('agent_config').upsert(row);
+  const msg=card.querySelector('[data-msg]');
+  if(error){msg.textContent='Save failed: '+error.message;msg.className='status-err';return}
+  cfgRows[a.id]=row;dirty[a.id]=false;msg.className='muted status-ok';msg.textContent='Saved '+new Date().toLocaleTimeString();
+}
+function applyRemoteAgent(row){
+  cfgRows[row.agent]=row;const card=$('#ag-'+row.agent);
+  if(!card||dirty[row.agent])return;
+  card.querySelectorAll('[data-f]').forEach(el=>{if(document.activeElement!==el)el.value=row[el.dataset.f]??''});
+  card.querySelector('[data-msg]').textContent='Updated live '+new Date().toLocaleTimeString();
+}
+
+/* ---------- realtime + polling ---------- */
+function subscribe(){
+  if(!sb)return;
+  sb.channel('dev-team')
+   .on('postgres_changes',{event:'*',schema:'public',table:'agent_config'},p=>p.new&&applyRemoteAgent(p.new))
+   .on('postgres_changes',{event:'INSERT',schema:'public',table:'run_steps'},p=>{
+      if(run&&p.new.run_id===run.id&&!steps.some(s=>s.id===p.new.id)){steps.push(p.new);renderRun()}})
+   .on('postgres_changes',{event:'UPDATE',schema:'public',table:'runs'},p=>{
+      if(run&&p.new.id===run.id){run=p.new;renderRun();loadHistory()}})
+   .subscribe();
+}
+function startPolling(){stopPolling();pollTimer=setInterval(refreshRun,3000)}
+function stopPolling(){if(pollTimer){clearInterval(pollTimer);pollTimer=null}}
+async function refreshRun(){
+  if(!sb||!run)return;
+  const [r,s]=await Promise.all([sb.from('runs').select('*').eq('id',run.id).single(),sb.from('run_steps').select('*').eq('run_id',run.id).order('id')]);
+  if(r.data)run=r.data;if(s.data)steps=s.data;renderRun();
+}
+
+/* ---------- run ---------- */
+async function startRun(){
+  const req=$('#req').value.trim(),hook=getSettings().hook;
+  if(!req){toast('Type a request first');return}
+  if(!sb||!hook){toast('Connect first');return}
+  $('#runBtn').disabled=true;
+  const {data,error}=await sb.from('runs').insert({request:req}).select().single();
+  if(error){toast('Could not create run: '+error.message);$('#runBtn').disabled=false;return}
+  run=data;steps=[];renderRun();startPolling();
+  try{
+    const res=await fetch(hook,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({run_id:run.id,request:req})});
+    if(!res.ok)throw new Error('n8n answered '+res.status+(res.status===404?' (is the workflow published / listening for a test event?)':''));
+  }catch(e){
+    await sb.from('runs').update({status:'error'}).eq('id',run.id);
+    toast('Webhook failed: '+(e.message||e));await refreshRun();
+  }
+  $('#runBtn').disabled=false;
+}
+
+/* ---------- render run ---------- */
+function latest(agent){for(let i=steps.length-1;i>=0;i--)if(steps[i].agent===agent)return steps[i];return null}
+function codeOf(text){const m=(text||'').match(/```(?:python|py)?\n([\s\S]*?)```/);return (m?m[1]:text||'').trim()}
+function buildPackage(){
+  const g=a=>(latest(a)||{}).output||'';
+  return `# Request\n${run.request}\n\n## Spec\n${g('product_manager')}\n\n## Design\n${g('architect')}\n\n## Code\n${g('developer')}\n\n## Test Report\n${g('tester')}\n`;
+}
+function renderRun(){
+  const pipe=$('#pipe');pipe.textContent='';
+  if(!run){$('#steps').innerHTML='<p class="muted">Nothing yet. Start a run.</p>';$('#final').hidden=true;$('#roundBadge').hidden=true;$('#runStatus').hidden=true;return}
+  const done=run.status==='done',err=run.status==='error';
+  const last=steps.length?steps[steps.length-1].agent:null;
+  const li=ORDER.findIndex(a=>a.id===last);
+  const next=done||err?-1:(li<0?0:(li+1)%ORDER.length);
+  ORDER.forEach((a,i)=>{
+    const st=latest(a.id),d=document.createElement('div');
+    const cls=(i===next)?'running':(st?'done':'');
+    d.className='stage '+cls;
+    d.innerHTML='<b></b><small></small>';d.querySelector('b').textContent=a.label;
+    d.querySelector('small').textContent=(i===next)?'working…':(st?('done · round '+st.round):'waiting');
+    pipe.appendChild(d);
+  });
+  const rounds=Math.max(0,...steps.filter(s=>s.agent==='tester').map(s=>s.round));
+  const rb=$('#roundBadge');rb.hidden=false;rb.textContent='Test rounds: '+rounds;
+  const rs=$('#runStatus');rs.hidden=false;rs.textContent=run.status;rs.style.color=done?'var(--ok)':err?'var(--err)':'var(--warn)';
+  const box=$('#steps');box.textContent='';
+  if(!steps.length){box.innerHTML='<p class="muted">Waiting for the first agent…</p>'}
+  steps.forEach(s=>{
+    const lab=(ORDER.find(a=>a.id===s.agent)||{label:s.agent}).label;
+    const d=document.createElement('details');d.className='step';d.open=s===steps[steps.length-1];
+    const sm=document.createElement('summary');
+    sm.innerHTML='<b></b><span class="badge"></span><span class="muted"></span>';
+    sm.querySelector('b').textContent=lab;sm.querySelector('.badge').textContent='round '+s.round;
+    sm.querySelector('.muted').textContent=new Date(s.created_at).toLocaleTimeString();
+    const pre=document.createElement('pre');pre.textContent=s.output||'';
+    d.append(sm,pre);box.appendChild(d);
+  });
+  $('#final').hidden=!(done&&steps.length);
+  if(done||err)stopPolling();
+}
+function download(name,text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+
+/* ---------- history ---------- */
+async function loadHistory(){
+  if(!sb)return;
+  const {data}=await sb.from('runs').select('id,request,status,created_at').order('created_at',{ascending:false}).limit(15);
+  const sel=$('#history');const cur=sel.value;sel.length=1;
+  (data||[]).forEach(r=>{const o=document.createElement('option');o.value=r.id;o.textContent=`${new Date(r.created_at).toLocaleString()} · ${r.status} · ${r.request.slice(0,40)}`;sel.appendChild(o)});
+  sel.value=cur;
+}
+async function openRun(id){
+  if(!id||!sb)return;stopPolling();
+  const [r,s]=await Promise.all([sb.from('runs').select('*').eq('id',id).single(),sb.from('run_steps').select('*').eq('run_id',id).order('id')]);
+  if(r.data){run=r.data;steps=s.data||[];$('#req').value=run.request;renderRun();if(run.status==='running')startPolling()}
+}
+
+/* ---------- wire up ---------- */
+$('#chips').append(...EXAMPLES.map(([n,t])=>{const b=document.createElement('button');b.type='button';b.textContent=n;b.onclick=()=>{$('#req').value=t};return b}));
+$('#connectBtn').onclick=connect;
+$('#runBtn').onclick=startRun;
+$('#history').onchange=e=>openRun(e.target.value);
+$('#dlPkg').onclick=()=>run&&download('software-dev-team-output.md',buildPackage());
+$('#dlCode').onclick=()=>run&&download('app.py',codeOf((latest('developer')||{}).output));
+$('#cpCode').onclick=async()=>{try{await navigator.clipboard.writeText(codeOf((latest('developer')||{}).output));toast('Code copied')}catch(e){toast('Copy blocked by the browser')}};
+$('#resetBtn').onclick=()=>{try{localStorage.removeItem('devteam')}catch(e){}$('#sbUrl').value=$('#sbKey').value=$('#hook').value='';toast('Saved keys cleared')};
+(function init(){const s=getSettings();$('#sbUrl').value=s.url||'';$('#sbKey').value=s.key||'';$('#hook').value=s.hook||'';if(s.url&&s.key)connect()})();
+</script>
+</body>
+</html>
