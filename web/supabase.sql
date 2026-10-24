@@ -1,4 +1,4 @@
--- Run this once in Supabase: SQL Editor -> New query -> paste -> Run
+-- Run in Supabase: SQL Editor -> New query -> paste -> Run. Safe to run more than once.
 
 create table if not exists agent_config (
   agent          text primary key,
@@ -27,7 +27,12 @@ create table if not exists run_steps (
 );
 
 -- Live updates (Realtime)
-alter publication supabase_realtime add table agent_config, runs, run_steps;
+do $$
+begin
+  begin alter publication supabase_realtime add table agent_config; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table runs;         exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table run_steps;    exception when duplicate_object then null; end;
+end $$;
 
 -- Access for the web page (anon key). Fine for a class project / demo.
 -- Anyone who has the page and your anon key can edit prompts, so do not store secrets here.
@@ -35,8 +40,11 @@ alter table agent_config enable row level security;
 alter table runs         enable row level security;
 alter table run_steps    enable row level security;
 
+drop policy if exists "anon all agent_config" on agent_config;
 create policy "anon all agent_config" on agent_config for all to anon using (true) with check (true);
+drop policy if exists "anon all runs" on runs;
 create policy "anon all runs"         on runs         for all to anon using (true) with check (true);
+drop policy if exists "anon all run_steps" on run_steps;
 create policy "anon all run_steps"    on run_steps    for all to anon using (true) with check (true);
 
 -- Starter prompts (edit the model names to match the ones your n8n nodes use)
