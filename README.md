@@ -60,11 +60,24 @@ Each agent node has its own model setting, so you can mix local and cloud models
    Build a CLI to-do app in Python with add, list, and delete.
    ```
 
-The prompts for each agent are in [`prompts/`](prompts/) if you want to read or rebuild the flow by hand.
+The prompts for each agent are in [`Prompts/`](Prompts/) if you want to read or rebuild the flow by hand.
+
+## Repository structure
+
+| Folder | Contents |
+|---|---|
+| [`flow/`](flow/) | Where the exported Flowise JSON goes (`software-dev-team.json`, not added yet) |
+| [`Prompts/`](Prompts/) | Flowise prompts for each node, plus the Round Counter function |
+| [`n8n/`](n8n/) | The n8n version: prompts, code nodes and setup. The exported workflow JSON is not added yet |
+| [`web/`](web/) | Single-page web console and its Supabase schema |
+| [`System Architecture/`](System%20Architecture/) | Screenshots of the Flowise canvas and the n8n workflow |
+| [`Crew Workflows/`](Crew%20Workflows/) | Screenshot of the Process Flow trace from a real run |
+| [`Outputs/`](Outputs/) | Screenshots of node details and the final Flow State |
+| [`example/`](example/) | Written sample of the final output |
 
 ## Example
 
-See [`examples/todo-app-output.md`](examples/todo-app-output.md) for a sample run (replace with your own output).
+See [`example/todo-app-output.md`](example/todo-app-output.md) for a sample run (replace with your own output).
 
 ## Web console
 
